@@ -48,7 +48,7 @@ public class Principal extends Application {
         StackPane panel = new StackPane(this.bg_canvas,this.canvas);
         this.scene = new Scene(panel, this.width, this.height);
 
-        stage.setTitle("DAW Game");
+        stage.setTitle("Avioncitos game");
         stage.setResizable(false);
         stage.setScene(scene);
         //para que cierre al pulsar el icono

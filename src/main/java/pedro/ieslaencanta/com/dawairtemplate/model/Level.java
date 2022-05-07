@@ -48,10 +48,15 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
     private Estado estado;
     private Player p;
     private Fighter fighter;
-    private Enemy enemigoprueba;
+    private AEnemy enemigoprueba;
     private ArrayList<Bullet> balasEnemy;
+    private ArrayList<AEnemy> enemigos;
+    private int contador = 0;
+    private String tipoenemigo;
 
     public Level(String image_path, String music_path, Size s, int speed, Coordenada start_position, GraphicsContext bg_ctx, float[] probabilidad_enemigos, int fin) {
+	this.initFactoryEnemy();
+	this.tipoenemigo = FactoryEnemy.getKeyNames().get(1);
 	this.background = new Background(image_path, s, speed, start_position);
 	this.background.setBg(bg_ctx);
 	this.position = 0;
@@ -59,6 +64,7 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
 	this.estado = Estado.PRE_STARTED;
 	this.fin = fin;
 	this.s = s;
+	this.enemigos = new ArrayList<>();
 	//crear el avion
 	this.fighter = new Fighter(
 		3,
@@ -70,7 +76,23 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
 	this.initSound(music_path);
 
 	//Enemigo de prueba
-	this.enemigoprueba = new Enemy(3, new Size(48, 22), new Coordenada(700, 200), new Rectangle(new Coordenada(200, 200), new Coordenada(s.getWidth(), s.getHeight())));
+	//this.enemigoprueba = new Enemy(3, new Size(912, 800), new Coordenada(1000, 40), new Rectangle(new Coordenada(200, 200), new Coordenada(s.getWidth(), s.getHeight())));
+    }
+
+    private void initFactoryEnemy() {
+	FactoryEnemy.addEnemy("Enemy1", Enemy1::new);
+	FactoryEnemy.addEnemy("Enemy2", Enemy2::new);
+    }
+
+    private void crearEnemy() {
+	AEnemy tempo;
+	this.tipoenemigo = FactoryEnemy.getNext(this.tipoenemigo);
+
+	int cordy = (int) (Math.random() * (this.s.getHeight() - 50));
+	System.out.println("Credo");
+	tempo = FactoryEnemy.create(this.tipoenemigo);
+	tempo.initEnemy(new Coordenada(1000, cordy), new Rectangle(new Coordenada(0, 0), new Coordenada(s.getWidth(), s.getHeight())));
+	this.enemigos.add(tempo);
     }
 
     private void initSound(String music_path) {
@@ -90,7 +112,8 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
 
 	this.background.paint(gc);
 	this.fighter.draw(gc);
-	this.enemigoprueba.draw(gc);
+	this.enemigos.forEach(a -> a.draw(gc));
+
 	if (this.estado == Estado.PRE_STARTED) {
 	    gc.setFill(Color.BROWN);
 	    gc.setStroke(Color.WHITE);
@@ -105,13 +128,20 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
 	if (this.getEstado() == Estado.RUNNING) {
 	    //llamar a tictac de los hijos
 	    this.TicTacChildrens();
+	    this.detectCollisions();
+	    //contador prueba
+	    this.contador++;
+	    if (contador == 100) {
+		this.crearEnemy();
+		contador = 0;
+	    }
 
 	    //posicion en la que termina
 	    if (this.position < this.fin) {
 		this.position += this.speed;
-	    } else {
-		this.EndLevel();
-	    }
+	    } //else {
+	    //	this.EndLevel();
+	    // }
 	}
     }
 
@@ -119,12 +149,21 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
 	//pintar el fondo
 	this.background.TicTac();
 	this.fighter.TicTac();
-	this.enemigoprueba.TicTac();
+	this.enemigos.forEach(e -> e.TicTac());
     }
 
     private void detectCollisions() {
 	//se mira si las balas del avión le pegan a algún enemigo
 	//ademá se borran los que se pasen por el lateral
+	this.enemigos.removeIf(e -> e.getPosicion().getX() < e.getInc() || e.hascollided());
+
+	this.fighter.getBalas().forEach(b -> {
+	    this.enemigos.forEach(e -> e.isCollision(b));
+	});
+
+	this.enemigos.forEach(e -> {
+	    e.isCollision(fighter);
+	});
 
     }
 
@@ -193,4 +232,28 @@ public class Level implements IDrawable, IWarnClock, IKeyListener {
 	}
 
     }
+
+    public ArrayList<Bullet> getBalasEnemy() {
+	return balasEnemy;
+    }
+
+    public void setBalasEnemy(ArrayList<Bullet> balasEnemy) {
+	this.balasEnemy = balasEnemy;
+    }
+
+    public Fighter getFighter() {
+	return fighter;
+    }
+
+    public void setFighter(Fighter fighter) {
+	this.fighter = fighter;
+    }
+
+    /**
+     * @param tipoenemigo the tipoenemigo to set
+     */
+    public void setTipoenemigo(String tipoenemigo) {
+	this.tipoenemigo = tipoenemigo;
+    }
+
 }
